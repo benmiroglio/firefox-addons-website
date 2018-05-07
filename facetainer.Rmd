@@ -1,0 +1,40 @@
+---
+title: "Facebook Container DAU, WAU and MAU by Channel"
+output:
+  html_document:
+    theme: cosmo
+    toc: true
+    includes:
+      in_header: "html/header-facetainer.html"
+---
+
+
+<style>
+h1.title {
+ margin-top: 50px;
+}
+
+div#TOC {
+margin-top: 20px;
+}
+</style>
+
+---
+
+The charts below track the following metrics for users with the Facebook Containers (`@contain-facebook`) extension in their environment, as observable from Telemetry:
+
+* **DAU** (Daily Active Users): Count of distinct users on a given day
+* **WAU** (Weekly Active Users): Count of distinct users in the last 7 days
+* **MAU** (Monthly Active Users): Count of distinct users in the last 28 days
+
+These counts are **not sampled** and reflect the true value for each channel. 
+
+Note that Facebook Containers was launched on March 27, 2018; therefore WAU and MAU do not reflect their true values until 7 and 28 days **after** the launch date, respectively.
+
+---
+
+```{r, echo=FALSE, warning=F}
+htmltools::includeHTML('./html/facetainer-template.html')
+```
+
+

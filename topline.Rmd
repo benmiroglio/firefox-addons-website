@@ -1,0 +1,255 @@
+---
+title: "57 Topline Add-ons Metrics"
+output:
+    html_document:
+        theme: cosmo
+        toc: true
+        toc_depth: 2
+        includes:
+         in_header: "html/header-topline.html"
+
+---
+
+
+<style>
+h1.title {
+ margin-top: 50px;
+}
+
+div#TOC {
+margin-top: 20px;
+}
+</style>
+
+
+```{r, include=F}
+library(kableExtra)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+```
+
+
+
+
+## What percent of Users are on 57?
+
+The chart below shows the percentage of release users on 57 for
+
+* **Users with Add-ons**
+    + For add-on users we see on day $x$, what % are using Release 57?
+* **Users without Add-ons**
+    + For users without add-ons we see on day x, what % are using Release 57?
+    
+56 Uptake is included as a basline.
+
+#### Context
+
+Legacy add-ons are no longer supported in 57, therefore some users might be reluctant to upgrade, revert to an older version, or switch channels (see ESR section) in order to continue using their favorite add-ons. Given this hypothesis, do we see a smaller percentage of add-on users on Release 57 compared to users without add-ons? How does this compare to the 56 release?
+
+**Note: 56 experienced an extended throttling period, which can explain the plateau in uptake for the 3-7 days after the release date**.
+
+*Update: this chart no longer updates with time since we reached stability 30 days after release.*
+
+
+
+```{r, echo=FALSE, warning=F}
+#system("aws s3 cp s3://telemetry-test-bucket/bmiroglio/addons57/release_version_pcts.json ./data/")
+htmltools::includeHTML('./html/versionsummary.html')
+```
+
+
+----
+
+
+
+## Retention
+
+
+
+Here we look at retention for **existing** users with and without add-ons after updating to Release 57. We further facet users into frequency of use before the update to better understand retention for infrequent, occasional and frequent users. These users are classifed by the following:
+
+* **Infrequent**: Used Firefox <3 days a week, on average, in the two weeks leading up to 57
+* **Occasional**: Used Firefox 3-5 days a week, on average, in the two weeks leading up to 57
+* **Frequqent**: Used Firefox 6+ Days a week, on average, in the two weeks leading up to 57
+
+Note that for existing users we are really capturing *churn after update*, but for consistency with other reports we use retention as the measure in question, which ends up being $1 - churn$. Retention is broken down at the daily and weekly level, each having a slightly different definition.
+
+**N Week Retention**: For users that updated in the first week after the release date
+
+  * What % are active in the 2nd week (1 week retention) **and** the 3rd week (2 week retention), , $\dots$, **and** the $n$th week (N-1 Week Retention)
+
+  
+**N Day Retention**: For users that updated on day $x$
+
+  * What % are active on day $x+1$ (1 Day Retention) **and** $x+2$ (2 Day Retention) , $\dots$, **and** $x+n$ (N Day Retention)
+  
+56 retention is included as a baseline.
+
+Some notes
+
+  * The day on which a user updates can affect N Day Retention measures. Retention was first calculated for each day of the week, and then averaged to remove day-of-week effects. This isn't a problem for N Week Retention.
+  * These measures are cummulative (hence the bold **and**'s) i.e. for users that updated on the 57 release date which was a Tuesday, 3 Day Retention is the % active on the following Wednesday, Thursday and Friday. N-day retention is restricted to at most 7 days, making N-week retention the go-to for long-term retention. 
+  * N Day Retention is biased toward heavy users and is restricted to 7 days, making N Week Retention better suited for long-term effects. 
+  * N Week Retention is fixed in time, while N Day Retention depends on when a user updates. 
+
+---
+
+## Add-ons vs. No Add-ons
+
+
+The chart below compares users with (any) add-ons to users without add-ons for each usage level (click to toggle). 
+
+<br>
+
+```{r,fig.height=5, fig.width=10, echo=F, warning=F, message=F}
+htmltools::includeHTML('./html/retentionsummary.html')
+```
+
+
+## Legacy Add-ons vs. WebExtensions
+
+The chart below compares users with **only** WebExtensions to users with **only** Legacy Add-ons for each usage level (click to toggle).
+
+<br>
+
+```{r,fig.height=5, fig.width=10, echo=F, warning=F, message=F}
+htmltools::includeHTML('./html/retentionsummaryexpanded.html')
+```
+
+
+
+
+
+
+---
+
+
+## Add-ons Ecosystem in 57 vs. 56
+
+We compare simple metrics in 57 to 56 to understand how, if at all, the add-ons ecosystem has changed since 57 was release. First we can look at the percentage of users that have self installed add-ons over a week period for each version. We can then break this down into the distribution of the number of add-ons per user. For 56, we look at the last week of data before 57 released. For 57, we look at the most recent week of data.
+
+
+#### What to Look For
+
+Given the absence of legacy add-ons in 57, do we see less users with add-ons in 57 as compared to 56?
+
+
+```{r, echo=F, include=F, warning=F}
+#system("aws s3 cp s3://telemetry-test-bucket/bmiroglio/addons57/meta57.csv ./data/")
+#system("aws s3 cp s3://telemetry-test-bucket/bmiroglio/addons57/addonhist57.csv ./data/")
+meta <- read.csv("./data/meta57.csv")
+meta <- meta[which.max(meta$days),]
+
+pct57 <- paste(as.character(round(meta$pct)), "%", sep="")
+d <- data.frame(v56="40%", v57=pct57)
+days56 <- "v56\n(days of data=7)"
+days57 <- sprintf("v57\n(days of data=%s)", meta$days)
+colnames(d) <- c(days56, days57)
+row.names(d) <- c("% Users with Self-Installed Add-ons")
+
+d %>%
+mutate(
+  Metric=row.names(.),
+  v56=cell_spec(days56, "html",  bold=T),
+  v57=cell_spec(days57, "html",  bold=T)
+) %>%
+select(Metric, days56, days57) %>%
+kable("html", escape=F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width=F, font_size=25)
+```
+
+
+
+<center>
+
+
+```{r, fig.height=5, include=F, fig.width=10, echo=F, warning=F, message=F}
+system("aws s3 cp s3://telemetry-test-bucket/bmiroglio/addons57/addonhist57.csv ./data/")
+system("aws s3 cp s3://telemetry-test-bucket/bmiroglio/addons57/addonhist56.csv ./data")
+
+
+prep_hist <- function(v) {
+  hist <- read.csv(sprintf("./data/addonhist%s.csv", v))
+  hist <- rbind(data.frame(n_addons=0, count=1-sum(hist$count)), hist)
+  hist$version=v
+  hist
+}
+hist56 <- prep_hist("56")
+hist57 <- prep_hist("57")
+hist <- rbind(hist56, hist57)
+hist$percent <- hist$count * 100
+p <- ggplot(hist[hist$n_addons <= 5,]) +
+  geom_col(aes(x=n_addons, y=percent, fill=version), alpha=.6, position="dodge") +
+  theme(axis.line = element_line(colour = "#B3B2B2"),
+        panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+    text= element_text(family='sans')) +  labs(x="Number of Self-Installed Add-ons (X)", y="% Users", title=" % Users with X Self-Installed Add-ons") +
+  scale_x_continuous(breaks=0:7) +
+  scale_fill_manual("legend", values = c("57" = "#05b378", "56" = "#acabab")) 
+p + 
+  geom_text(data=hist[hist$n_addons <= 5,], 
+            aes(x=n_addons, y=percent, group=version,
+                label=paste(round(percent, 2), "%", sep='')), 
+            position=position_dodge(.9), vjust=-.25, size=2.5,)
+```
+
+
+*This section is experiencing data issues and will be updated soon*
+</center>
+
+<div> 
+
+<br>
+<br>
+
+----
+
+
+## Add-ons Ecosystem Overall Trends
+
+The following charts show the past and present trends for add-on users on Release, **independent of version**. These are meant to serve as a bird's eye view of the add-ons ecosystem as a whole.
+
+```{r, echo=FALSE, warning=F}
+htmltools::includeHTML('./html/toplinemetrics.html')
+```
+
+
+<br>
+<br>
+
+---
+
+
+
+
+
+## ESR
+
+As mentioned in the first section, it is possible that legacy add-on users are switching over to the ESR channel. The chart below tracks the number of ESR users overall and for users with self-installed add-ons. Note that this chart only goes back to November 13th, 2017 and the dips seen at November 17th, November 24th, ..., are typical weekend drops. 
+
+#### What to Look For
+
+Do we see increases in the number of ESR users with add-ons after the 57 release?
+
+```{r, echo=FALSE, warning=F}
+htmltools::includeHTML('./html/toplinemetricsesr.html')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

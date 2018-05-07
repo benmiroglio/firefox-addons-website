@@ -1,0 +1,29 @@
+---
+title: "Firefox Add-ons"
+output:
+  html_document:
+     theme: cosmo
+---
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<br>
+
+
+<center>
+--- 
+
+### This page hosts all add-on-related analyses that aren't supported through STMO.
+
+#### [Code is on GitHub](https://github.com/benmiroglio/firefox-addons)
+
+--- 
+
+<center>

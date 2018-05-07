@@ -1,0 +1,68 @@
+
+<style>
+
+div.title-containerExpanded {
+	margin-left: 90px;
+}
+
+.legendMain {
+	font-weight: 600;
+	width: 380px;
+}
+
+button {
+	width: 100px;
+}
+
+/*button.active {
+	width: 150px;
+	height: 40px;
+}*/
+
+.split-by-freq button {
+  height: 50px;
+  width: 190px;
+}
+
+h4 {
+	margin-bottom: 1px;
+}
+
+.mg-line3, .mg-line4 {
+    stroke-dasharray: 3, 3;
+}
+
+</style>
+<center>
+
+
+<div class="title-container-main">
+<h4></h4>
+
+<div class="btn-group btn-group-sm text-center split-by-freq">
+    <button type="button" class="btn btn-default active" data-user_type="all">All Users</button>
+    <button type="button" class="btn btn-default" data-user_type="light">
+    Infrequent Users <br> 0-2 Days/Week
+    </button>
+    <button type="button" class="btn btn-default" data-user_type="medium">Occasional Users <br> 3-5 Days/Week</button>
+    <button type="button" class="btn btn-default" data-user_type="heavy">Frequent Users <br> 6+ Days/Week</button>
+</div>
+
+<br>
+
+<div class="btn-group btn-group-sm text-center split-by-controls-gen">
+    <button type="button" class="btn btn-default active expanded" data-y_accessor="week">N Week</button>
+    <button type="button" class="btn btn-default" data-y_accessor="day">N Day</button>
+</div>
+
+
+<div class='legendMain'></div>
+</div>
+<br>
+
+<div class='retention'></div>
+
+
+<br>
+<br>
+</center>

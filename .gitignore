@@ -1,0 +1,6 @@
+.R*
+data/
+_site/
+*.csv
+*.json
+.DS*

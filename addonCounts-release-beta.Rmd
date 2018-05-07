@@ -1,0 +1,50 @@
+---
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        theme: cosmo
+        includes:
+         in_header: "html/header.html"
+
+---
+<br>
+<br>
+
+######  `r paste('Last Updated:', Sys.Date())`
+
+* The following charts ignore all system add-ons. 
+* All Test Pilot, DevTools, and shield add-ons are excluded when counting Legacy Add-ons. 
+* Please see [this google doc](https://docs.google.com/spreadsheets/d/1UgcnCEjAFx9cizPxbYUB5Ow_PbJzsLgGN1AlVZPPFb8/edit#gid=139068957) for a full list of Level 1 and Level 2 add-ons.
+
+
+<hr>
+
+## Release 
+
+<div>
+
+```{r, echo=FALSE}
+htmltools::includeHTML('./html/release.html')
+```
+
+</div>
+
+<hr>
+
+## Beta
+
+<div>
+
+```{r, echo=FALSE}
+htmltools::includeHTML('./html/beta.html')
+```
+
+</div>
+
+
+
+
+
+
+
