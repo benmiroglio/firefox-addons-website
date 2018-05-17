@@ -4,3 +4,6 @@ _site/
 *.csv
 *.json
 .DS*
+.Rproj.user
+*files/
+*cache/

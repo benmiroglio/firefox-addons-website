@@ -1,0 +1,813 @@
+---
+title: "Engagement Study for Adblockers, Facetainer and FxA"
+author: "Ben Miroglio"
+date: "03/20/2018"
+output: 
+  html_document:
+    theme: cosmo
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+This document reproduces results from the Firefox Add-ons Engagement Study for uers with Facebook Containers and Firefox Acconts. Adblockers are included for comparison.
+
+# Background on Study Design
+
+This study involves observational data from Firefox users over 42 days. We segment these days into 3 different periods:
+
+* *Baseline Period*: The first 14 days, restricted to users that do not install any adblockers, facetainer or enable sync
+* *Treatment Period*: The following 14 days, in which the test group either installs or enables any of the above
+* *Observation Period*: The remaining 14 days, in which we observe behavior for the test and control groups
+
+The control group consists of users that never installed or enabled the add-ons/prefs in question in the entire 42 day study.
+
+The idea is that if we control for differences between the test and control groups (via matching techniques) and for their baseline activity (via the baseline period) how does engagement change after install/enabling? We look at three different Firefox metrics to serve as proxies for engagement:
+
+* **Active Hours**: Mean active hours for a given user per session (mouse clicks, scrolling, key-presses, etc.)
+* **Total URIs**: Mean number of webpage loads for a given user per session
+* **Search Volume**: Mean number of searches for a given user per session
+
+For more information on the study design and matching process, please refer to the following sources:
+
+* [Add-on Engagement Study Slides](https://docs.google.com/presentation/d/1m6E0LNsB3MfQ5_4lnycjc6IBi7Ty8YOAT__dhWwIqGw/edit#slide=id.g26d133558e_0_1261)
+* [The Effect of Ad Blocking on User Engagement with the Web](http://delivery.acm.org/10.1145/3190000/3186162/p813-miroglio.html?ip=63.245.222.198&id=3186162&acc=OPEN&key=4D4702B0C3E38B35%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35%2E6D218144511F3437&__acm__=1526582748_a34cc36f80568c51561b607ae095f838)
+
+-------
+
+
+
+```{r, include=F}
+setwd("~/src/addons-engagement-study/models/")
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(data.table)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+library(broom)
+library(knitr)
+
+# these are the measures for which will we estimate an effect
+engagementMeasures <- c("active_ticks", "tab_open_event_count", 
+                        "total_uri_count", "unique_domains_count",
+                        "subsession_length","search_sources_search_bar",
+                        "search_sources_url_bar",
+                        "search_total",
+                        "search_engines_google", "places_pages_count", "places_bookmarks_count")
+
+
+code_log <- function(i) ifelse(i > 0, log(i), 0)
+# constructs a formula to be fed into lm()
+# effect is the treatment binary variable
+make.formula <- function(resp, addons=NULL, effect='adblocker') {
+  y <- paste("log_", resp, "_post", sep="")
+  X <- paste("log_", resp, sep="")
+  controllers <- c("n", "log_memory_mb", paste("log", engagementMeasures, sep="_"))
+  
+  # if addons are specified, add them to formula
+  # ignoring the treatment variable
+  if (!is.null(addons)) {
+    X <- paste(X, '+',  paste(addons, collapse = ' + '))
+  } else { # add effect
+    X <- paste(X, '+', effect)
+  }
+  #X <- paste(X, "+" , paste(controllers, collapse=" + "))
+  # cat(paste(y, '~', X))
+  formula <- as.formula(paste(y, '~', X))
+  formula
+}
+
+# returns a list of the top N addons in df
+top_addons <- function(df, n) {
+  sort(apply(select(df, contains("addon_")), 2, sum), decreasing = TRUE)[1:n]
+}
+
+drop_invalid_rows <- function(d) {
+  # drop entries where a pre or post measurement is <=0
+  to_drop <- unique(unlist(sapply(engagementMeasures, function(x) {
+    unlist(c(which(d[,x]<0), which(d[,paste(x, "_post", sep='')]<0)))
+  })))
+  
+  if (length(to_drop) > 0) {
+    d <- d[-to_drop,]
+  }
+  d
+}
+
+
+# fits linear model with effect as the treatment indicator. Also
+# includes all numeric features since we haven't balanced them well after
+# matching
+# returned object contains summary, residual and qqPlots for both a generic model
+# and one that contains the top 10 add-ons. 
+fit.model <- function(d, measure, w, effect="treatment") {
+  f <- make.formula(measure, effect=effect)
+  m <- lm(f, data=d, weights=w)
+  resid <- m$residuals
+  df = augment(m)
+  p <- ggplot(df, aes(x = .fitted, y = .resid)) + 
+    geom_point(size=.2, alpha=.2) + theme_bw() +
+    ggtitle("Residuals vs. Fitted Values")
+  p1 <- ggplot(data=data.frame(r=resid), aes(sample=r)) + 
+    geom_qq(size=.5, alpha=.2) + theme_bw() + ggtitle("Residual QQ-Plot")
+  list(summary=summary(m),
+       residPlt=p, 
+       qqPlot=p1,
+       formula=f)
+  
+}
+
+```
+
+
+
+
+```{r, cache=TRUE, include=F, cache=T}
+adblock.path='matched_data14_14_14_adblock.csv'
+system(sprintf("aws s3 cp s3://telemetry-test-bucket/addons/engagement_study/%s ./data/", adblock.path)) 
+d.adblock <- read.csv(paste("./data/", adblock.path, sep=''))
+
+ft.path='matched_data14_14_14_ft.csv'
+system(sprintf("aws s3 cp s3://telemetry-test-bucket/addons/engagement_study/%s ./data/", ft.path)) 
+d.ft <- read.csv(paste("./data/", ft.path, sep=''))
+
+fxa.path='matched_data14_14_14_fxa.csv'
+system(sprintf("aws s3 cp s3://telemetry-test-bucket/addons/engagement_study/%s ./data/", fxa.path)) 
+d.fxa <- read.csv(paste("./data/", fxa.path, sep=''))
+
+pv <- c()
+
+format_data <- function(d) {
+  setnames(d, old = c("scalar_parent_browser_engagement_tab_open_event_count_post", 
+                      "scalar_parent_browser_engagement_total_uri_count_post",
+                      "scalar_parent_browser_engagement_unique_domains_count_post"),
+              new = c("tab_open_event_count_post", 
+                      "total_uri_count_post",
+                      "unique_domains_count_post"))
+  
+  setnames(d, old = c("scalar_parent_browser_engagement_tab_open_event_count", 
+                      "scalar_parent_browser_engagement_total_uri_count",
+                      "scalar_parent_browser_engagement_unique_domains_count"),
+              new = c("tab_open_event_count", 
+                      "total_uri_count",
+                      "unique_domains_count"))
+  
+  
+  d["log_memory_mb"] = log(d$memory_mb)
+  
+  for (i in engagementMeasures) {
+    log_pre <- paste("log_", i, sep='')
+    post <- paste(i, "post", sep="_")
+    log_post <- paste("log_", post, sep='')
+    is_zero <- paste(i, "is_zero", sep = "_")
+    d[log_pre] <- sapply(d[i], code_log)
+    if (i!="memory_mb") {
+      d[log_post] <- sapply(d[post], code_log)
+    }
+    d[is_zero] = factor(d[i] == 0)
+    
+  }
+  d
+}
+
+d.adblock <- format_data(d.adblock)
+d.ft <- format_data(d.ft)
+d.fxa <- format_data(d.fxa)
+
+
+
+
+```
+
+
+
+
+```{r, cache=TRUE}
+# calculate client frequency in dataset, since control profiles
+# can be matched to multiple test profiles
+a.adblock <- aggregate(n~client_id, data=d.adblock, length)
+colnames(a.adblock) <- c("client_id", "weight")
+# weight each obs by 1/freq, freq=number of times that client appears in the dataset
+model.weights.adblock <-  1 / merge(d.adblock, a.adblock, by="client_id")$weight
+
+# calculate client frequency in dataset, since control profiles
+# can be matched to multiple test profiles
+a.ft <- aggregate(n~client_id, data=d.ft, length)
+colnames(a.ft) <- c("client_id", "weight")
+# weight each obs by 1/freq, freq=number of times that client appears in the dataset
+model.weights.ft <-  1 / merge(d.ft, a.ft, by="client_id")$weight
+
+# calculate client frequency in dataset, since control profiles
+# can be matched to multiple test profiles
+a.fxa <- aggregate(n~client_id, data=d.fxa, length)
+colnames(a.fxa) <- c("client_id", "weight")
+# weight each obs by 1/freq, freq=number of times that client appears in the dataset
+model.weights.fxa <-  1 / merge(d.fxa, a.fxa, by="client_id")$weight
+
+
+```
+
+
+
+
+# Overall Results
+
+The results below isolate the effect of
+
+* Installing Adblock Plus or uBlock Origin (Adblockers)
+* Installing Facebook Containers
+* Enabling Sync (and therefore FxA)
+
+
+holding all other factors (approximately) equal. These are the 3 treatment groups in question.
+
+Table 1 contains the estimated percent change in each engagement measure after installing or enabling one of the above. The plot below the table contains the same information with confidence intervals. 
+
+
+```{r, fig.height=7, fig.width=10, warning=F, message=F}
+t <- read.csv('overall_results_adb_ft_fxa.csv')
+
+tmp <- t
+betas <- tmp
+betas$group <- factor(betas$group, 
+                      levels = c("FxA", "Facetainer", "Adblocker"))
+betas <- betas[order(betas$measure, betas$group),]
+betas$measure <- factor(betas$measure, 
+                        levels=c("Active Hours", "Total URIs", "Search Volume"))
+
+
+# --------------------------------------------------------
+# check if user defined labels have been supplied
+# if not, use variable names from data frame
+# --------------------------------------------------------
+axis.labels <- betas$group
+# --------------------------------------------------------
+# define sorting criteria. the values on the x-axis are being sorted
+# either by beta-values (sort="beta") or by standardized
+# beta values (sort = anything else)
+# --------------------------------------------------------
+# sort labels descending in order of (std.) beta values
+# sort rows of data frame descending in order of (std.) beta values
+# --------------------------------------------------------
+betas <- cbind(xpos = seq_len(nrow(betas)), betas)
+betas$p.string <- as.character(betas$ps)
+betas$xpos <- as.factor(betas$xpos)
+# --------------------------------------------------------
+# Calculate axis limits. The range is from lowest lower-CI
+# to highest upper-CI, or a user-defined range (if "axis.lim"
+# is not NULL)
+# --------------------------------------------------------
+
+
+# --------------------------------------------------------
+# Start plot here! First check how to colour geoms
+# (whether grouped or not)
+# --------------------------------------------------------
+y.offset = .39
+x.offset = .01
+geom.size= 3
+vline.type = 2
+vline.color = 'red'
+axis.title = "title"
+legend.title <- "legend title"
+
+betas$estimate_pct <- (exp(betas$estimate) - 1) * 100
+betas$conf_low_pct <- (exp(betas$conf.low) - 1) * 100
+betas$conf_high_pct <- (exp(betas$conf.high) - 1) * 100
+
+upper_lim <- (ceiling(10 * max(betas$conf_high_pct))) / 10
+lower_lim <- (floor(10 * min(betas$conf_low_pct))) / 10
+
+# determine gridbreaks
+ticks <- pretty(c(lower_lim, upper_lim))
+    
+signed <- paste(ifelse(betas$estimate < 0, '', '+'), round(betas$estimate_pct), sep='')
+betas$psig <-  paste(paste(signed, '%', sep=''), betas$ps, sep=' ')
+
+
+di <- data.table(betas)[,.(measure, 
+                           group, 
+                           pct_change=ifelse(grepl('[*.]', psig), 
+                                             gsub('[*.]', '', psig), 
+                                             '0%'))]
+
+dc <- dcast(di, measure ~ group, value.var = "pct_change")
+setcolorder(dc, c('measure', 'Adblocker', 'Facetainer', 'FxA'))
+
+dc %>%
+  kable('html', 
+        caption='Table 1: Estimated Percent Change in Engagement By Treatment Group',
+        format.args = list(decimal.mark = '.', big.mark = ",")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), 
+                full_width=T, font_size=15)
+  
+
+betaplot <- ggplot(betas, 
+                   aes_string(x='xpos', 
+                              y='estimate_pct', 
+                              colour='measure', 
+                              shape='measure')) +
+    # and error bar
+    geom_errorbar(aes_string(ymin='conf_low_pct', 
+                             ymax='conf_high_pct'), 
+                  width = 0) +
+    # Print p-values. With vertical adjustment, 
+    # so they don't overlap with the errorbars
+    geom_text(aes_string(label = "psig"), 
+              nudge_x = y.offset,
+              show.legend = FALSE, 
+              size=3.5) +
+    # print point
+    geom_point(size = geom.size) +
+    # Intercept-line
+    geom_hline(yintercept = 0, 
+               linetype = vline.type, 
+               color = vline.color) +
+    # set y-scale-limits, breaks and tick labels
+    scale_y_continuous(limits = c(lower_lim, upper_lim), 
+                       breaks = ticks, 
+                       labels = ticks) +
+    # set value labels to x-axis
+    scale_x_discrete(labels = axis.labels) + 
+    coord_flip() + theme_bw() + theme(legend.position="bottom", 
+                                      legend.title=element_blank()) +
+    facet_grid(measure ~ ., scales = "free_y") +
+
+    xlab("Treatment Group") + ylab("Estimate") + 
+    labs(title='Estimated Percent Change in Engagement (w 95% Confidence Intervals) By Treatment',
+         subtitle="Significance codes    0: ***,  0.001: **,  0.01: *,  0.05: . ")
+ 
+
+betaplot
+
+```
+
+### Interpretation
+
+Since we allow a 14 day baseline period, users in the test group can be thought of as users that "discovered" Adblockers, Facebook Containers or FxA, since they exibited significant behavior without them for at least 14 days.
+
+Looking at Table 1 we can say the following:
+
+* For users that "discover" Adblockers we expect their active hours, total URIs, and search volume to change by +16%, +16% and -4% respectively.
+* For users that "discover" Facebook Containers we expect their active hours, total URIs, and search volume to change by +10%, +12% and +7% respectively.
+* For users that "discover" FxA, we expect their active hours, total URIs, and search volume to change by -7%, +14% and -3% respectively.
+
+
+# Model Results {.tabset}
+
+This section is for the curious. The key takeaways have been summarized above.
+
+## Adblockers {.tabset}
+
+[Data Extraction Code](https://gist.github.com/benmiroglio/aa2f53eb522e2ce7b0260bc9ad67cb29)
+
+[Data Matching Code](https://gist.github.com/benmiroglio/97e9cdbe31d588361793126f17ebbac5)
+
+```{R}
+t <- data.frame()
+cat("Number of users with ABP or uBlock:", sum(ifelse(d.adblock$treatment == 1, 1, 0)))
+```
+
+
+### Active Ticks 
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+options(width=120)
+w <- model.weights.adblock
+f <- fit.model(d.adblock, "active_ticks", w, effect='treatment')
+f$summary
+
+ggplot(data=d.adblock) + 
+        geom_point(aes(x=log(active_ticks), y=log(active_ticks_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='adblocker=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='adblocker=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+fit <- lm(f$formula, data=d.adblock)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+
+#grid.arrange(p1, p2)
+```
+
+
+
+
+
+### Total URIs 
+
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+f <- fit.model(d.adblock, "total_uri_count", w, effect="treatment")
+f$summary
+
+
+
+ggplot(data=d.adblock) + 
+        geom_point(aes(x=log(total_uri_count), y=log(total_uri_count_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='adblocker=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='adblocker=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+
+fit <- lm(f$formula, data=d.adblock)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+
+#grid.arrange(p1, p2)
+
+```
+
+
+
+### Search Total 
+
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+f <- fit.model(d.adblock, "search_total", w, effect="treatment")
+f$summary
+
+
+ggplot(data=d.adblock) + 
+        geom_point(aes(x=log(search_total), y=log(search_total_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='adblocker=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='adblocker=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+fit <- lm(f$formula, data=d.adblock)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+#grid.arrange(p1, p2)
+```
+
+
+## Facebook Container {.tabset}
+
+[Data Extraction Code](https://gist.github.com/benmiroglio/f6039be3bac7d4511f7589eee8d59db1)
+
+[Data Matching Code](https://gist.github.com/benmiroglio/7c2ef87d5d859af4046063f48837b5c7)
+
+
+```{R}
+w <- model.weights.ft
+cat("Number of users with facetainer:", sum(ifelse(d.ft$treatment == 1, 1, 0)))
+```
+
+
+### Active Ticks 
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+options(width=120)
+f <- fit.model(d.ft, "active_ticks", w, effect='treatment')
+f$summary
+
+ggplot(data=d.ft) + 
+        geom_point(aes(x=log(active_ticks), y=log(active_ticks_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='Facebook Container=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='Facebook Container=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+fit <- lm(f$formula, data=d.ft)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+
+#grid.arrange(p1, p2)
+
+
+```
+
+
+
+
+
+### Total URIs 
+
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+f <- fit.model(d.ft, "total_uri_count", w, effect="treatment")
+f$summary
+
+
+
+ggplot(data=d.ft) + 
+        geom_point(aes(x=log(total_uri_count), y=log(total_uri_count_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='Facebook Container=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='Facebook Container=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+
+fit <- lm(f$formula, data=d.ft)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+
+#grid.arrange(p1, p2)
+
+```
+
+
+
+### Search Total 
+
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+f <- fit.model(d.ft, "search_total", w, effect="treatment")
+f$summary
+
+
+ggplot(data=d.ft) + 
+        geom_point(aes(x=log(search_total), y=log(search_total_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='Facebook Container=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='Facebook Container=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+fit <- lm(f$formula, data=d.ft)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+#grid.arrange(p1, p2)
+```
+
+
+
+## Firefox Accounts {.tabset}
+
+
+[Data Extraction Code](https://gist.github.com/benmiroglio/aa2f53eb522e2ce7b0260bc9ad67cb29)
+
+[Data Matching Code](https://gist.github.com/benmiroglio/97e9cdbe31d588361793126f17ebbac5)
+
+
+```{R}
+w <- model.weights.fxa
+cat("Number of users with FxA:", sum(ifelse(d.fxa$treatment == 1, 1, 0)))
+```
+
+
+### Active Ticks 
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+options(width=120)
+f <- fit.model(d.fxa, "active_ticks", w, effect='treatment')
+f$summary
+
+ggplot(data=d.fxa) + 
+        geom_point(aes(x=log(active_ticks), y=log(active_ticks_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='FxA=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='FxA=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+fit <- lm(f$formula, data=d.fxa)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+
+#grid.arrange(p1, p2)
+
+
+```
+
+
+
+
+
+### Total URIs 
+
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+f <- fit.model(d.fxa, "total_uri_count", w, effect="treatment")
+f$summary
+
+
+
+ggplot(data=d.fxa) + 
+        geom_point(aes(x=log(total_uri_count), y=log(total_uri_count_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='FxA=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='FxA=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+
+fit <- lm(f$formula, data=d.fxa)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+
+#grid.arrange(p1, p2)
+
+```
+
+
+
+### Search Total 
+
+
+
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+f <- fit.model(d.fxa, "search_total", w, effect="treatment")
+f$summary
+
+
+ggplot(data=d.fxa) + 
+        geom_point(aes(x=log(search_total), y=log(search_total_post), 
+                       colour="points"), color="black", alpha=.2, size=.2) +
+        geom_abline(aes(color='FxA=1', 
+                        intercept=f$summary$coefficients[1,1] + 
+                                  f$summary$coefficients[3,1], 
+                        slope=f$summary$coefficients[2,1])) +
+        geom_abline(aes(color='FxA=0', 
+                        intercept=f$summary$coefficients[1,1],  
+                        slope=f$summary$coefficients[2,1])) +
+              ggtitle("Fitted Regression Lines") +
+  scale_colour_discrete("Treatment") + theme_bw()
+
+p1 <- f$residPlt
+p2 <- f$qqPlot
+
+fit <- lm(f$formula, data=d.fxa)
+
+tmp <- broom::tidy(fit, conf.int = TRUE) %>%
+    dplyr::slice(-1) %>%
+    dplyr::select_("term", "estimate", "conf.low", "conf.high")
+
+c <- tmp[2,]
+t <- rbind(t, c)
+pv <- c(pv, f$summary$coefficients[3,4])
+#grid.arrange(p1, p2)
+```
+
+
+
+```{r}
+#"","term","estimate","conf.low","conf.high","pv","measure","group","ps"
+t$pv <- pv
+t$term <- c(rep('Adblocker', 3), rep("Facetainer", 3), rep("FxA", 3))
+t$measure <- rep(c("Active Hours", "Total URIs", "Search Volume"), 3)
+t$group <- t$term
+t$ps <- sapply(t$pv, function(i) {
+  if (i < 0.00001) '***'
+  else if (i < 0.001) '**'
+  else if (i < 0.01) '*'
+  else if (i < 0.05) '.'
+  else ' '
+})
+t
+
+write.csv(t, "overall_results_adb_ft_fxa.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

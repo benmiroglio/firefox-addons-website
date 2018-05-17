@@ -15,4 +15,9 @@ navbar:
     - text: Quantum
     - text: Topline Add-ons Metrics
       href: topline.html
+    - text: Engagement Studies
+    - text: Add-ons, Themes, Adblockers, msa, vdh
+      href: es-addons-themes.html
+    - text: Adblockers, Facetainer, FxA
+      href: es-fxa-ft-adblock.html
 
