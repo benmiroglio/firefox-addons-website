@@ -38,13 +38,10 @@ For more information on the study design and matching process, please refer to t
 
 
 ```{r, include=F}
-setwd("~/src/addons-engagement-study/models/")
 library(dplyr)
 library(ggplot2)
 library(reshape2)
 library(data.table)
-library(data.table)
-library(gridExtra)
 library(kableExtra)
 library(broom)
 library(knitr)

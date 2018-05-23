@@ -20,4 +20,7 @@ navbar:
       href: es-addons-themes.html
     - text: Adblockers, Facetainer, FxA
       href: es-fxa-ft-adblock.html
+    - text: Surveys
+    - text: New Users with Add-ons
+      hred: addons-survey.html
 
