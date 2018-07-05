@@ -5,165 +5,76 @@ date: "`r Sys.Date()`"
 output: 
   html_document:
     theme: cosmo
-    toc_float: true
-params:
-  who_purchased:
-    label: "Did your employer purchase the computer you are using to complete this survey?"
-    value: All
-    input: select
-    choices: [All, "I'm not sure", "No", "Yes"]
+    toc: true
+    toc_float: true 
 ---
 
-```{r, include=F}
-library(data.table, quietly = T)
-library(ggplot2, quietly = T)
-
-
-```
-
-```{R, include=F, cache=T}
-d <- fread("~/Desktop/addonsSurveyExport.csv")
-N <- nrow(d)
-```
-
-We had `r N` users complete this survey.
-
-# Survey Response Summaries
-
----
-
-```{r, include=F}
-q = "Did your employer purchase the computer you are using to complete this survey?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=8, echo=F}
-ggplot(d, aes(d[,get(q)])) +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(size=14)) + labs(y='% Responses', x='')
-
-```
-
----
-
-```{R, include=F}
-q = "How recently was Firefox installed on the computer you are using to complete this survey?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=8, echo=F}
-ggplot(d, aes(d[,get(q)])) +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(size=14, angle = 35, vjust=1, hjust = 1)) + labs(y='% Responses', x='')
-
-```
-
----
-
-```{R, include=F}
-q = "Have you added any add-ons or extensions to Firefox on the computer you are using to complete this survey?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=8, echo=F}
-ggplot(d, aes(d[,get(q)])) +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(size=14)) + labs(y='% Responses', x='')
-
-```
-
----
-
-```{R, include=F}
-q = "Why was Firefox installed on the computer you are using to complete this survey?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=12, echo=F}
-ggplot(d[get(q) != ''], aes(get(q)))  +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() + coord_flip() +
-  theme(axis.text.y = element_text(size=14)) + labs(y='% Responses', x='')
-
-```
-
----
-
-```{R, include=F}
-q = "Have you added any add-ons or extensions to Firefox on the computer you are using to complete this survey?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=8, echo=F}
-ggplot(d[get(q) != ''], aes(get(q)))  +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() +
-  theme(axis.text.x = element_text(size=14)) + labs(y='% Responses', x='')
-
-```
-
----
-
-```{R, include=F}
-q = "How soon after installing Firefox did you install the first add-on / extension?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=12, echo=F}
-ggplot(d[get(q) != ''], aes(get(q)))  +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() + coord_flip() +
-  theme(axis.text.y = element_text(size=14)) + labs(y='% Responses', x='')
-
-```
-
-
----
-
-```{R, include=F}
-q = "Have you used the add-ons / extensions you installed before?"
-```
-
-### `r q`
-
-```{R, fig.height=5, fig.width=12, echo=F}
-ggplot(d[get(q) != ''], aes(get(q)))  +
-  geom_bar(aes(y = (..count..)/sum(..count..)), fill='#feb475') + 
-  theme_bw() + coord_flip() +
-  theme(axis.text.y = element_text(size=14)) + labs(y='% Responses', x='')
-
-```
-
----
-
-### "How did you discover the add-ons / extensions you installed?"
-
-```{R, fig.height=5, fig.width=12, echo=F}
-
-addon_disco <- data.table()
-
-for (i in colnames(d)[which(grepl("How did you discover the add-ons / extensions you installed?", colnames(d)))]) {
-  di <- d[get(i) != ''][,get(i)]
-  addon_disco <- unique(rbind(addon_disco, data.table(resp=strsplit(i, ':')[[1]][1], count=length(di))))
+<style>
+body {
+margin-top: 50px;
 }
+</style>
 
-addon_disco$pct <- addon_disco$count / sum(addon_disco$count) * 100
 
 
-ggplot(addon_disco, aes(x=resp, y=pct)) +
-  geom_col(fill='#feb475') + 
-  theme_bw() + coord_flip() +
-  theme(axis.text.y = element_text(size=14)) + labs(y='% Responses', x='')
+## Background
+
+This survey was inspired by the chart below, which shows (for all **add-on users**) the distribution of the number of days elapsed before the first add-on installation event. Original re:dash query is [here](https://sql.telemetry.mozilla.org/queries/51128/source#137165). 
+
+```{r, echo=F}
+htmltools::includeHTML("./html/days_install.html")
 ```
+
+The above chart shows that nearly 50% of add-ons users installed their first add-on on the same day their Firefox profile was created, which is closely tied with the Firefox installation date. This implies that most of the new add-on users we see knew exactly what they wanted upon downloading Firefox. We suspect that these users are, in fact, **existing** Firefox users that got new hardware and promptly configured Firefox to their liking on the first session. This occurrence is not identifiable using telemetry, which is why we administered a survey.
+
+---
+
+## Design
+
+We can survey Firefox users using the [Heartbeat](https://wiki.mozilla.org/Firefox/Shield/Heartbeat) service, targeting those with the following characteristics:
+
+* locale of `en-US`, `en-AU`, `en-CA`, `en-GB,` `en-NZ` or `en-ZA`
+* version >= `59.0`
+* channel = `release`
+* 1+ non-system add-ons
+* profile created in April, 2018
+
+The survey was distributed on May 11th, 2018 and obtained 990 responses.
+
+---
+
+## Results
+
+This section contains a subset of survey questions. All questions can be found on [Survey Gizmo's dashboard](https://qsurvey.mozilla.com/r/28049_5afdf4ec53d526.64707167).
+
+#### TL;DR
+
+* **40%** of respondents said they were installing Firefox on a new computer
+* **80%** said they installed extensions within an hour of installing Firefox
+    + 68% (immediately) + 12% (within an hour)
+* **94%** said they've used the extensions before
+    + 78% (in Firefox) + 16% (in a different browser)
+
+---
+
+#### Detailed Results
+
+
+```{r, echo=F}
+htmltools::includeHTML('./html/addons-survey.html')
+```
+
+
+## Conclusions
+
+
+The majority of users in this survey indicated they were already familiar with the extensions they installed in Firefox. The most likely reasons for this are:
+
+* The user got a new computer, and reconfigured Firefox to mirror their old computer.
+* The user switched browsers, and reconfigured Firefox to mirror their old browser.
+
+We cannot identify these cases in Telemetry, and so it is imperative that we keep this survey in mind whenever doing analysis on new add-ons users. This survey also suggests that any initiatives to move the needle for new add-on users might be harder than we think, since this segment is overcrowded with add-on users from a past (browser) life.  
+
 
 
 
