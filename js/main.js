@@ -60,7 +60,7 @@ function graphic(data, channel, target, tSuff, title, pct, num, denom) {
 
 }
 
-function channelGraph(channel, target, path="data/addon-counts-new-comb.json") {
+function channelGraph(channel, target, path="data/addon-counts.json") {
 	d3.json(path, function(data){
 		MG.convert.date(data, "submission_date", "%Y%m%d")
 		pct_channel = "pct_" + channel 

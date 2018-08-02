@@ -19,7 +19,7 @@ margin-top: 50px;
 
 ## Background
 
-This survey was inspired by the chart below, which shows (for all **add-on users**) the distribution of the number of days elapsed before the first add-on installation event. Original re:dash query is [here](https://sql.telemetry.mozilla.org/queries/51128/source#137165). 
+This survey was inspired by the chart below, which shows (for all **add-on users**) the distribution of the number of days before a user installed their first add-on. Original re:dash query is [here](https://sql.telemetry.mozilla.org/queries/51128/source#137165). 
 
 ```{r, echo=F}
 htmltools::includeHTML("./html/days_install.html")
@@ -33,7 +33,7 @@ The above chart shows that nearly 50% of add-ons users installed their first add
 
 We can survey Firefox users using the [Heartbeat](https://wiki.mozilla.org/Firefox/Shield/Heartbeat) service, targeting those with the following characteristics:
 
-* locale of `en-US`, `en-AU`, `en-CA`, `en-GB,` `en-NZ` or `en-ZA`
+* locale of `en-US`, `en-AU`, `en-CA`, `en-GB`, `en-NZ` or `en-ZA`
 * version >= `59.0`
 * channel = `release`
 * 1+ non-system add-ons
@@ -73,8 +73,7 @@ The majority of users in this survey indicated they were already familiar with t
 * The user got a new computer, and reconfigured Firefox to mirror their old computer.
 * The user switched browsers, and reconfigured Firefox to mirror their old browser.
 
-We cannot identify these cases in Telemetry, and so it is imperative that we keep this survey in mind whenever doing analysis on new add-ons users. This survey also suggests that any initiatives to move the needle for new add-on users might be harder than we think, since this segment is overcrowded with add-on users from a past (browser) life.  
-
+We cannot identify these cases in Telemetry, and so it is imperative that we keep this survey in mind whenever doing analysis on new add-ons users. This survey also suggests that any initiatives to move the needle for new add-on users might be harder than we think, since this segment is overcrowded with add-on users from a past (browser) life. See [this retention analysis](https://metrics.mozilla.com/protected/bmiroglio/addons/retention-change/retention-change.html), which mentions these caveats.
 
 
 

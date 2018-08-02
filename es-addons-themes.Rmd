@@ -60,7 +60,7 @@ v1 <- 'addon_.b9db16a4.6edc.47ec.a1f4.b86292ed211d.' # Video Download Helper
 
 
 
-```{r, cache=TRUE, include=F}
+```{r, cache=F, include=F}
 # read in matched data
 d <- read.csv("./es-data/matched_datafinal.csv")
 pv <- c()
@@ -83,7 +83,7 @@ setnames(d, old = c("scalar_parent_browser_engagement_tab_open_event_count",
 
 
 
-```{r, cache=TRUE, warning=F, include=F}
+```{r, cache=F, warning=F, include=F}
 
 
 # these are the measures for which will we estimate an effect
@@ -141,7 +141,7 @@ top_addons <- function(df, n) {
 
 ```
 
-```{r, cache=TRUE}
+```{r, cache=F}
 # drop entries where a pre or post measurement is <=0
 to_drop <- unique(unlist(sapply(engagementMeasures, function(x) {
   unlist(c(which(d[,x]<0), which(d[,paste(x, "_post", sep='')]<0)))
@@ -386,7 +386,7 @@ cat("Number of users with add-ons AND themes:", sum(ifelse(d$addons_themes == 1,
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model("active_ticks", effect='addons_themes')
 f$summary
@@ -431,7 +431,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("total_uri_count", effect="addons_themes")
 f$summary
 
@@ -474,7 +474,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("search_total", effect="addons_themes")
 f$summary
 
@@ -522,7 +522,7 @@ cat("Number of users with add-ons:", sum(ifelse(d$addon==1, 1, 0)))
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model("active_ticks", effect='addon')
 f$summary
@@ -567,7 +567,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("total_uri_count", effect="addon")
 f$summary
 
@@ -610,7 +610,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("search_total", effect="addon")
 f$summary
 
@@ -652,7 +652,7 @@ cat("Number of users with themes:", sum(ifelse(d$theme==1, 1, 0)))
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model("active_ticks", effect='theme')
 f$summary
@@ -697,7 +697,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("total_uri_count", effect="theme")
 f$summary
 
@@ -740,7 +740,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("search_total", effect="theme")
 f$summary
 
@@ -785,7 +785,7 @@ cat("Number of users with adblockers (uBlock + ABP):", sum(ifelse(d$adblocker==T
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model("active_ticks")
 f$summary
@@ -834,7 +834,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("total_uri_count")
 f$summary
 
@@ -877,7 +877,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("search_total")
 f$summary
 
@@ -922,7 +922,7 @@ cat("Number of users with VDH:", sum(ifelse(d$video.download==T, 1, 0)))
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model("active_ticks", effect="video.download")
 f$summary
@@ -971,7 +971,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("total_uri_count", effect="video.download")
 f$summary
 
@@ -1011,7 +1011,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("search_total", effect="video.download")
 f$summary
 
@@ -1059,7 +1059,7 @@ cat("Number of users with mcafee:", sum(ifelse(d$mcafee==T, 1, 0)))
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model("active_ticks", effect="mcafee")
 f$summary
@@ -1106,7 +1106,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("total_uri_count", effect="mcafee")
 f$summary
 
@@ -1145,7 +1145,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model("search_total", effect="mcafee")
 f$summary
 

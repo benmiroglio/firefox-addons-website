@@ -1,0 +1,26 @@
+---
+title: Localization Campaign Metrics
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    includes:
+      in_header: "html/header-l10n.html"
+---
+
+<div>
+
+```{r, echo=FALSE}
+htmltools::includeHTML('./html/l10n-locale.html')
+```
+
+</div>
+
+
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 

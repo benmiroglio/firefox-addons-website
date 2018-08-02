@@ -121,7 +121,7 @@ fit.model <- function(d, measure, w, effect="treatment") {
 
 
 
-```{r, cache=TRUE, include=F, cache=T}
+```{r, cache=F, include=F, cache=F}
 adblock.path='matched_data14_14_14_adblock.csv'
 system(sprintf("aws s3 cp s3://telemetry-test-bucket/addons/engagement_study/%s ./data/", adblock.path)) 
 d.adblock <- read.csv(paste("./data/", adblock.path, sep=''))
@@ -181,7 +181,7 @@ d.fxa <- format_data(d.fxa)
 
 
 
-```{r, cache=TRUE}
+```{r, cache=F}
 # calculate client frequency in dataset, since control profiles
 # can be matched to multiple test profiles
 a.adblock <- aggregate(n~client_id, data=d.adblock, length)
@@ -371,7 +371,7 @@ cat("Number of users with ABP or uBlock:", sum(ifelse(d.adblock$treatment == 1, 
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 w <- model.weights.adblock
 f <- fit.model(d.adblock, "active_ticks", w, effect='treatment')
@@ -415,7 +415,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model(d.adblock, "total_uri_count", w, effect="treatment")
 f$summary
 
@@ -459,7 +459,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model(d.adblock, "search_total", w, effect="treatment")
 f$summary
 
@@ -509,7 +509,7 @@ cat("Number of users with facetainer:", sum(ifelse(d.ft$treatment == 1, 1, 0)))
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model(d.ft, "active_ticks", w, effect='treatment')
 f$summary
@@ -554,7 +554,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model(d.ft, "total_uri_count", w, effect="treatment")
 f$summary
 
@@ -598,7 +598,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model(d.ft, "search_total", w, effect="treatment")
 f$summary
 
@@ -650,7 +650,7 @@ cat("Number of users with FxA:", sum(ifelse(d.fxa$treatment == 1, 1, 0)))
 ### Active Ticks 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 options(width=120)
 f <- fit.model(d.fxa, "active_ticks", w, effect='treatment')
 f$summary
@@ -695,7 +695,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model(d.fxa, "total_uri_count", w, effect="treatment")
 f$summary
 
@@ -739,7 +739,7 @@ pv <- c(pv, f$summary$coefficients[3,4])
 
 
 
-```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=TRUE}
+```{r, warning=F, message=F, fig.height=8, fig.width=8, cache=F}
 f <- fit.model(d.fxa, "search_total", w, effect="treatment")
 f$summary
 

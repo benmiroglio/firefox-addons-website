@@ -7,8 +7,6 @@ navbar:
     - text: Count Stats
     - text: Release + Beta
       href: addonCounts-release-beta.html
-    - text: Nightly
-      href: addonCounts-nightly.html
     - text: Facebook Container
     - text: DAU, WAU, MAU by Channel
       href: facetainer.html
@@ -22,5 +20,8 @@ navbar:
       href: es-fxa-ft-adblock.html
     - text: Surveys
     - text: New Users with Add-ons
-      hred: addons-survey.html
+      href: addons-survey.html
+    - text: Other
+    - text: Localization Campaign
+      href: l10n.html
 

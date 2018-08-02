@@ -22,7 +22,7 @@ output:
 
 ### This page hosts all add-on-related analyses that aren't supported through STMO.
 
-#### [Code is on GitHub](https://github.com/benmiroglio/firefox-addons)
+#### [Code is on GitHub](https://github.com/mozilla/firefox-addons-website)
 
 --- 
 

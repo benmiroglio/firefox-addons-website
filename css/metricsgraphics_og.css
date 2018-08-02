@@ -43,13 +43,12 @@ text.mg-barplot-group-label {
 }
 
 .mg-barplot rect.mg-bar.default-bar {
-    fill: #b6b6fc;
+    fill: #71aff4
 }
 
 .mg-barplot rect.mg-bar.default-active {
-    fill: #9e9efc;
+    fill: #2780e3;
 }
-
 .mg-barplot .mg-bar-prediction {
     fill: #5b5b5b;
 }
