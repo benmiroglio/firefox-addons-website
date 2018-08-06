@@ -91,6 +91,33 @@ function addonGraph(addon,  path="data/l10n-localization-campaign.json") {
     MG.convert.date(addon_data, "date", "%Y%m%d")
     
     MG.data_graphic({
+      target:'.' + addon_lst[addon].replace(/\s+/g, '').replace('-', '').replace("1", '') + '_pct',
+      title: "Percent of Users in Qualifying Locale with " + addon_lst[addon] + " By Day",
+      data: addon_data,
+      chart_type:'line',
+      linked: true,
+      x_label: "date",
+      x_accessor: 'date',
+      y_accessor: 'pct_addon_users',
+      x_axis: true,
+      full_width: true,
+      format: "percentage",
+      point_size: 5,
+      height: 250,
+      markers: markers,
+      y_mouseover: function(d,i) {
+				return  d['n_addon_users'].toLocaleString() + 
+				         " / " + 
+				        d["n_total_users"].toLocaleString() + 
+				         " = " + 
+				         Math.round(d["pct_addon_users"] * 1000) / 10 + '%'
+			},
+      interpolate: d3.curveLinear,
+      right: 200
+    });
+    
+    
+    MG.data_graphic({
       target:'.' + addon_lst[addon].replace(/\s+/g, '').replace('-', '').replace("1", ''),
       title: "Number of Total " + addon_lst[addon] + " Installs by Day",
       data: addon_data,
