@@ -21,6 +21,8 @@ navbar:
     - text: Surveys
     - text: New Users with Add-ons
       href: addons-survey.html
+    - text: AMO Survey
+      href: amo-survey.html
     - text: Other
     - text: Localization Campaign
       href: l10n.html

@@ -1,0 +1,90 @@
+---
+title: "AMO Survey Complementary Analysis"
+output:
+  html_document:
+    theme: cosmo
+    code_folding: hide
+---
+
+This is an RMarkdown Script that manipulates the [AMO survey data](https://data.surveygizmo.com/r/28049_5b4e59b654e213.14219487); the code for which lives [here](https://github.com/mozilla/firefox-addons-website/blob/master/amo-survey.Rmd). All code is also renderable in this page, and can be toggled on/off with the "Code" buttons.
+
+---
+
+The table below shows the number of users that recieved the survey in a specific language. The vast majority saw it in English.
+
+```{r setup, warning=F, message=F}
+library(data.table)
+library(DT)
+library(ggplot2)
+
+# ignore table clutter by default
+options(DT.options = list(
+  searching=F,
+  paging=F,
+  info=F)
+)
+
+# read in data as a data.table object
+data <- fread("./data//20180808132059-SurveyExport.csv")
+
+# create table of Language response counts
+datatable(rownames=F,data[, .N, Language][order(-N)],
+          caption='Number of Responses by Language')
+```
+
+---
+
+
+The chart below shows responses to the question "Did you find what you were looking for on AMO" broken out by whether or not the user has used Firefox in the last 30 days (if they haven't we assume they aren't using Firefox when taking this survey).
+
+
+```{r, fig.width=12, fig.height=6}
+
+# if the user hasn't answered Yes to "have you used FF in last 30 days"
+# code response as 'Not Firefox'
+data$using_firefox <- factor(
+  ifelse(data$`Have you used Firefox in the last 30 days to browse the internet?` == 'Yes', 
+         'Using Firefox',
+         'Not Using Firefox')
+)
+
+# create more managable variable
+data$successful_visit <- factor(data$`Did you find what you were looking for on addons.mozilla.org?`)
+
+# create barchart by Use of Firefox and successful visit
+ggplot(data[successful_visit != '',
+            .N, 
+            by=.(using_firefox, successful_visit)]) + 
+  geom_col(aes(y=N, x=successful_visit)) +
+  facet_grid(. ~ using_firefox) + theme_bw() +
+  ggtitle("AMO Satisfaction by Use of Firefox") + 
+  xlab("Did you find what you were looking for on AMO?") + 
+  ylab("Number of Responses")
+
+
+```
+
+
+---
+
+The following table shows the most desired add-ons for users that didn't find what they were looking for in AMO. Since this is raw user input, I convert all responses to be lowercase and free of any non-alphanumeric characters (like spaces and punctuation).
+
+
+```{r}
+
+# allow paging and searching
+options(DT.options = list(
+  searching=T,
+  paging=T)
+)
+
+# force all user input to be lowercase and stripped of non-alpha-numeric characters
+data$desired_addon <- gsub("[^[:alnum:]]", '', tolower(data$`Which extension did you come here to get?`))
+
+# render of table of the most desired add-ons for users that didn't find 
+# what they were looking for
+datatable(data[desired_addon != '' & successful_visit == 'No', .N, desired_addon][order(-N)],
+          caption = "Most desired add-ons for users that didn't find what they were looking for")
+
+
+```
