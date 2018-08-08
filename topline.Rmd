@@ -24,7 +24,6 @@ margin-top: 20px;
 
 ```{r, include=F}
 library(kableExtra)
-library(plotly)
 library(ggplot2)
 library(dplyr)
 library(knitr)

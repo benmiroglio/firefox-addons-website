@@ -38,7 +38,7 @@ datatable(rownames=F,data[, .N, Language][order(-N)],
 The chart below shows responses to the question "Did you find what you were looking for on AMO" broken out by whether or not the user has used Firefox in the last 30 days (if they haven't we assume they aren't using Firefox when taking this survey).
 
 
-```{r, fig.width=12, fig.height=6}
+```{r, fig.width=12, fig.height=6, warning=F, message=F}
 
 # if the user hasn't answered Yes to "have you used FF in last 30 days"
 # code response as 'Not Firefox'
@@ -70,7 +70,7 @@ ggplot(data[successful_visit != '',
 The following table shows the most desired add-ons for users that didn't find what they were looking for in AMO. Since this is raw user input, I convert all responses to be lowercase and free of any non-alphanumeric characters (like spaces and punctuation).
 
 
-```{r}
+```{r, warning=F, message=F}
 
 # allow paging and searching
 options(DT.options = list(
